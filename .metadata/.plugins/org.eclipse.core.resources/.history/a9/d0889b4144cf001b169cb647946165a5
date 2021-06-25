@@ -1,0 +1,50 @@
+package com.bezkoder.springjwt.security;
+
+import java.security.Principal;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
+import com.bezkoder.springjwt.security.services.ApplicationUser;
+import com.bezkoder.springjwt.security.services.UserDetailsImpl;
+
+@Component
+public class UserSecurityProvider {
+
+	
+	public ApplicationUser getConnectedUser() {
+		final SecurityContext securityContext = SecurityContextHolder.getContext();
+        if (securityContext == null) {
+            return null;
+        }
+        final Authentication authentication = securityContext.getAuthentication();
+        if (authentication == null) {
+            return null;
+        }
+        final Object userPrincipal = authentication.getPrincipal();
+        final ApplicationUser connectedUser = (userPrincipal instanceof Principal) ? (ApplicationUser) userPrincipal : null;
+    	//UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+        if (connectedUser == null) {
+        System.out.println("fffffffffffffff");
+            throw new SessionExpiredException("The current session is expired");
+        }
+     	//System.out.println("fffffffffffffff");
+        return connectedUser;
+	}
+	
+	public class SessionExpiredException extends RuntimeException{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public SessionExpiredException(String message) {
+			super(message);
+		}
+	}
+
+	
+}

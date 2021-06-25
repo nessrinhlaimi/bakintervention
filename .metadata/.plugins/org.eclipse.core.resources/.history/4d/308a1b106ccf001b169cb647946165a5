@@ -1,0 +1,149 @@
+package com.bezkoder.springjwt.controllers;
+
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.bezkoder.springjwt.models.Intervention;
+import com.bezkoder.springjwt.models.User;
+import com.bezkoder.springjwt.repository.UserRepository;
+import com.bezkoder.springjwt.repository.interventionRepository;
+import com.bezkoder.springjwt.security.UserSecurityProvider;
+import com.bezkoder.springjwt.security.jwt.JwtUtils;
+
+import exception.ResourceNotFoundException;
+
+
+@CrossOrigin(origins = "http://localhost:4200")
+@RestController
+@RequestMapping("/api/auth")
+public class InterventionController {
+	@Autowired
+	AuthenticationManager authenticationManager;
+
+	@Autowired
+	private interventionRepository repository;
+	
+	@Autowired
+	private UserRepository userRepository;
+	@Autowired
+	PasswordEncoder encoder;
+
+	@Autowired
+	JwtUtils jwtUtils;
+	@Autowired
+	private UserSecurityProvider userSecurityProvider;
+
+	@PostMapping(path = "/interventions/create")
+	
+		
+	
+	public Intervention  ajouterIntervention(@RequestBody final Intervention intervention, Principal principal ) {
+	  /*  Optional<User> currentUser = userRepository.findByUsername(principal.getName());
+	    if (currentUser.isPresent()) {
+			intervention.setUser(currentUser.get());
+	    }
+	    */
+		//intervention.setUser(intervention.get());
+	    intervention.setDate(new Date());
+		intervention.setLieu(intervention.getLieu());
+		intervention.setStructure(intervention.getStructure());
+		intervention.setInterv(intervention.getInterv());
+		intervention.setObservation(intervention.getObservation());
+		 System.out.println("uuuuuugfhfguuuuuu");
+		return repository.save(intervention);
+	}
+	
+	/*public ResponseEntity<Intervention> ajouterintervention(@RequestBody Intervention intervention) {
+		try {
+			Intervention _intervention = interventionRepository
+					.save(new Intervention(intervention.getDate(), intervention.getStructure(),intervention.getLieu(),intervention.getInterv(),intervention.getObservation()),false);
+			return new ResponseEntity<>( intervention, HttpStatus.CREATED);
+		} catch (Exception e) {
+			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}*/
+	
+	@GetMapping("/interventions/all")
+	public List<Intervention> getAllInterventions() {
+		final List<Intervention> interventions = new ArrayList<>(repository.findAll());
+		
+		return interventions;
+	}
+
+	
+	@DeleteMapping("/interventions/{id}")
+	public ResponseEntity<String> deleteIntervention(@PathVariable("id") final long id) {
+		
+		System.out.println("Delete Intervention with ID = " + id + "...");
+
+		repository.deleteById(id);
+
+		return new ResponseEntity<>("Intervention has been deleted!", HttpStatus.OK);
+	
+}
+	@PutMapping("/interventions/{id}")
+	public ResponseEntity<Intervention> updateIntervention(@PathVariable(value = "id") Long InterventionId,
+			@Valid @RequestBody Intervention interventionDetails) throws ResourceNotFoundException {
+		Intervention intervention = (Intervention) repository.findAllById( InterventionId);
+
+		intervention.setDate(interventionDetails.getDate());
+		intervention.setStructure(interventionDetails.getStructure());
+		intervention.setLieu(interventionDetails.getLieu());
+		intervention.setObservation(interventionDetails.getObservation());
+		
+		final Intervention updateIntervention = repository.save(intervention);
+		return ResponseEntity.ok(updateIntervention);
+	}
+	
+	/*@GetMapping("/interventions/{id}")
+	public ResponseEntity<Intervention> getInterventionById(@PathVariable(  "id") final long interventionId)
+			throws ResourceNotFoundException {
+		Intervention intervention = repository.findById(interventionId)
+				.orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + interventionId));
+		return ResponseEntity.ok().body(intervention);
+	}
+	*/
+	@GetMapping(value = "interventions/{id}")
+	public List<Intervention> findById(@PathVariable final long id) {
+		final List<Intervention> interventions = repository.findById(id);
+		//final User user = userSecurityProvider.getConnectedUser().getUser();
+		
+		
+		return interventions;
+	}
+	@GetMapping(value = "interventions/byuser/{id}")
+	public ResponseEntity getInterventionsByCurrentUser(@PathVariable final long id) {
+		User user = userRepository.findAllById(id);
+		if (user == null)
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found");
+
+		List<Intervention> interventions = new ArrayList<>(repository.findAll());
+
+
+		interventions = interventions.stream().filter(intervention -> intervention.getUser().equals(user)).collect(Collectors.toList());
+		return ResponseEntity.ok(interventions);
+	}
+	
+	
+}
